@@ -39,16 +39,13 @@ class WolfModuleDecidingPlayer(Agent):
     """ A Capture-game player that plays according to the rules, but choosing its moves
     according to the output of a module that takes as input the current state of the board. """
 
-    greedySelection = False
-
-    # if the selection is not greedy, use Gibbs-sampling with this temperature
+    # temperature = 1 for Gibbs-sampling
+    # temperature = 0 for greedy (always pick largest output in vote vector)
     temperature = 1.
 
     def __init__(self, module, *args, **kwargs):
         self.module = module
         self.pnum = None    # TODO it's dumb to let them know their own pnum this way
-        if self.greedySelection:
-            self.temperature = 0.
 
     def getAction(self):
         """ get suggested action, return them if they are legal, otherwise choose randomly. """
@@ -71,7 +68,6 @@ class WolfModuleDecidingPlayer(Agent):
           else                    : result = "Villager"
         else:
           votes = output[2:]
-          maxv = max(votes)  # Just pick biggest value as who we voted
           result = drawGibbs(votes, self.temperature)
         #print ()
         #print ("input", state)

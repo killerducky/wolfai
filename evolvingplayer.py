@@ -14,7 +14,7 @@ from simplewolfplayer import SimpleWolfPlayer
 
 # task settings
 #size = 5
-maxEvaluations = 50
+maxEvaluations = 1000
 numPlayers = 5
 numInputs  = 4+numPlayers*2  # self.ww, self.v, turn1, turn2, numPlayers*(p#.claim.ww, p#.claimv)
 numOutputs = 2+1*(numPlayers-1)  # claim.ww, claim.v, (numPlayers-1)*(p#.vote)
@@ -26,15 +26,15 @@ task = PlayWolfTask(numPlayers, opponents)
 # keep track of evaluations for plotting
 res = storeCallResults(task)
 
-# simple network
+# build network
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain import SigmoidLayer
-#net = buildNetwork(task.outdim, task.indim, outclass = SigmoidLayer)
-#net = buildNetwork(numInputs, numInputs, numOutputs)
-net = buildNetwork(numInputs, 1, numOutputs)
+net = buildNetwork(numInputs, numInputs, numOutputs, numOutputs, outclass = SigmoidLayer)
 
+
+print (net)
 net = CheaplyCopiable(net)
-print(net.name, 'has', net.paramdim, 'trainable parameters.')
+print (net.name, 'has', net.paramdim, 'trainable parameters.')
 
 learner = ES(task, net, mu = 5, lambada = 5,
              verbose = True, evaluatorIsNoisy = True,
@@ -42,6 +42,17 @@ learner = ES(task, net, mu = 5, lambada = 5,
 newnet, f = learner.learn()
 
 # plot the progression
-from pylab import plot, show
-plot(res)
+#from pylab import plot, show
+#plot(res)
 #show()
+
+print ("oldnet")
+print ("task score", task.f(net))
+
+print ("newnet")
+print ("task score", task.f(newnet))
+task.verbose = True
+task.averageOverGames = 1
+for _ in range(10):
+  print ("task score", task.f(newnet))
+

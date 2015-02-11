@@ -57,8 +57,8 @@ class WolfGame(Environment):
     #if self.done: print stateStr
 
   def stateStr(self):
-      s = "state turnnum=%s votefor=%s winner=%s" %(self.turnnum, self.votefor, self.winner)
-      s += "\nroles=" + str(self.roles)
+      s = "state turnnum=%s votefor=%s winner=%s" %(self.turnnum, self.votefor, [(0,1)[x] for x in self.winner])
+      s += "\nroles=" + str([("WW","VV")[x=="Villager"] for x in self.roles])
       s += "\nclaims=" + str(self.claim)
       return s
 

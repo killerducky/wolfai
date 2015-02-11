@@ -8,7 +8,7 @@ from wolfmoduledecision import WolfModuleDecidingPlayer
 #from pybrain.rl.environments.twoplayergames.capturegameplayers.captureplayer import CapturePlayer
 from wolfgame import WolfGame
 from pybrain.structure.modules.module import Module
-import random
+import random, traceback, sys
 
 
 class PlayWolfTask(EpisodicTask, Named):
@@ -18,10 +18,10 @@ class PlayWolfTask(EpisodicTask, Named):
     noisy = True
 
     def __init__(self, numPlayers, opponents, **args):
-
-        EpisodicTask.__init__(self, WolfGame(numPlayers, ["Werewolf", "Werewolf", "Villager", "Villager", "Villager"]))
+        EpisodicTask.__init__(self, WolfGame(numPlayers, ["Werewolf", "Villager", "Villager", "Villager", "Villager"]))
         self.setArgs(**args)
         self.opponents = []
+        self.verbose = False
         for i in range(len(opponents)):
           self.opponents.insert(i, opponents[i](self.env))
           self.opponents[i].pnum = i+1
@@ -37,21 +37,16 @@ class PlayWolfTask(EpisodicTask, Named):
     def getReward(self):
         """ Final positive reward for winner, negative for loser. """
         reward = 0.
+        winWeight = 1.0
+        truthWeight = 0.0
         if self.isFinished():
             if self.env.getWinner()[0]:
-              reward = 1.
-            else:
-              reward = -1.
+              reward += winWeight
             if self.env.roles[0] == self.env.claim[0]:
-              reward -= 0.1  # Penalty for lies
-            #print ("reward ", reward)
-        # TODO: Just test rewarding truth
-        if self.isFinished():
-            if self.env.roles[0] == self.env.claim[0]:
-              reward = -1.  # Penalty for lies
-            else:
-              reward =  1.  # Penalty for lies
-            #print ("reward ", reward)
+              reward += truthWeight
+            if (self.verbose):
+              print ("reward", reward, str(self.env.stateStr()))
+              #print traceback.print_stack(file=sys.stdout)
         return reward
 
     def performAction(self, action):
@@ -59,7 +54,6 @@ class PlayWolfTask(EpisodicTask, Named):
         for opp in self.opponents:
             action = opp.getAction()
             EpisodicTask.performAction(self, action)
-            #EpisodicTask.performAction(self, opp.getAction())
 
     def f(self, x):
         """ If a module is given, wrap it into a ModuleDecidingAgent before evaluating it.
@@ -77,8 +71,8 @@ class PlayWolfTask(EpisodicTask, Named):
             x = EpisodicTask.f(self, agent)
             res += x
         res /= float(self.averageOverGames)
-        print "averageOvergames", res
-        return res / float(self.averageOverGames)
+        #print "averageOvergames", res
+        return res
 
 
 
