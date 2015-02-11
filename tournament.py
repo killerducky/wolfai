@@ -3,7 +3,6 @@ from pybrain.utilities import Named
 
 
 class Tournament(Named):
-#class Tournament():
     """ the tournament class is a specific kind of experiment, that takes a pool of agents
     and has them compete against each other in a WolfGame. TODO: Generalize to n-player game """
 
