@@ -56,10 +56,14 @@ class WolfGame(Environment):
       raise Exception
     #if self.done: print stateStr
 
+  # A correctVote is voting for the other team
+  def correctVote(self, pnum):
+      return self.roles[self.votefor[pnum]] != self.roles[pnum]
+
   def stateStr(self):
-      s = "state turnnum=%s votefor=%s winner=%s" %(self.turnnum, self.votefor, [(0,1)[x] for x in self.winner])
-      s += "\nroles=" + str([("WW","VV")[x=="Villager"] for x in self.roles])
-      s += "\nclaims=" + str(self.claim)
+      s = "state turnnum=%s votefor=%s winner=%s CV=%s" %(self.turnnum, self.votefor, [(0,1)[x] for x in self.winner], self.correctVote(0))
+      s += " roles=" + str([("WW","VV")[x=="Villager"] for x in self.roles])
+      s += " claims=" + str(self.claim)
       return s
 
   def getWinner(self):

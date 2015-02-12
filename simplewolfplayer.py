@@ -12,7 +12,7 @@ class SimpleWolfPlayer(Agent):
   def getAction(self):
     if (self.game.turnnum == 0):
       if self.game.roles[self.pnum] == "Werewolf":
-        if random.random() < 0.85:
+        if random.random() < 0.95:
           return [self.pnum, "Werewolf"]
         else:
           return [self.pnum, "Villager"]

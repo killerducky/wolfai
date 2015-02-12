@@ -37,15 +37,18 @@ class PlayWolfTask(EpisodicTask, Named):
     def getReward(self):
         """ Final positive reward for winner, negative for loser. """
         reward = 0.
-        winWeight = 1.0
+        winWeight = 0.5
         truthWeight = 0.0
+        correctVoteWeight = 0.5
         if self.isFinished():
             if self.env.getWinner()[0]:
               reward += winWeight
             if self.env.roles[0] == self.env.claim[0]:
               reward += truthWeight
+            if self.env.correctVote(0):
+              reward += correctVoteWeight
             if (self.verbose):
-              print ("reward", reward, str(self.env.stateStr()))
+              print ("reward %s %s" %(reward, self.env.stateStr()))
               #print traceback.print_stack(file=sys.stdout)
         return reward
 

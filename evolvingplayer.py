@@ -5,6 +5,7 @@ from __future__ import print_function
 #from pybrain.rl.environments.twoplayergames import CaptureGameTask
 from pybrain.structure.evolvables.cheaplycopiable import CheaplyCopiable
 from pybrain.optimization import ES
+from pybrain.optimization import HillClimber
 from pybrain.utilities import storeCallResults
 #from pybrain.rl.environments.twoplayergames.capturegameplayers.killing import KillingPlayer
 
@@ -29,7 +30,8 @@ res = storeCallResults(task)
 # build network
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain import SigmoidLayer
-net = buildNetwork(numInputs, numInputs, numOutputs, numOutputs, outclass = SigmoidLayer)
+#net = buildNetwork(numInputs, numInputs, numOutputs, numOutputs, outclass = SigmoidLayer)
+net = buildNetwork(numInputs, numOutputs, outclass = SigmoidLayer)
 
 
 print (net)
@@ -39,6 +41,10 @@ print (net.name, 'has', net.paramdim, 'trainable parameters.')
 learner = ES(task, net, mu = 5, lambada = 5,
              verbose = True, evaluatorIsNoisy = True,
              maxEvaluations = maxEvaluations)
+#learner = HillClimber(
+#              task, net,
+#              evaluatorIsNoisy = True,
+#              maxEvaluations = maxEvaluations)
 newnet, f = learner.learn()
 
 # plot the progression
@@ -46,11 +52,22 @@ newnet, f = learner.learn()
 #plot(res)
 #show()
 
+def netLongStr(net):
+  for mod in net.modules:
+    for conn in net.connections[mod]:
+      print (conn)
+      for cc in range(len(conn.params)):
+        print (conn.whichBuffers(cc), conn.params[cc])
+
 print ("oldnet")
+#print (netLongStr(net.getBase()))
 print ("task score", task.f(net))
 
 print ("newnet")
+#print (netLongStr(newnet.getBase()))
 print ("task score", task.f(newnet))
+
+# Print 10 example games
 task.verbose = True
 task.averageOverGames = 1
 for _ in range(10):
