@@ -393,12 +393,14 @@ class WolfModBot(SingleServerIRCBot):
 
   def say_public(self, text):
     "Print TEXT into public channel, for all to see."
+    if not REAL_IRC: return
     if self.debug: print "say_public %s" % (text)
     self.queue.send(IRC_BOLD+text, self.channel)
 
 
   def say_private(self, nick, text):
     "Send private message of TEXT to NICK."
+    if not REAL_IRC: return
     if self.debug: print "say_private %s %s" % (nick, text)
     self.queue.send(IRC_BOLD+text,nick)
     if self.example_game:
@@ -407,6 +409,7 @@ class WolfModBot(SingleServerIRCBot):
 
   def reply(self, e, text):
     "Send TEXT to public channel or as private msg, in reply to event E."
+    if not REAL_IRC: return
     if e.eventtype() == "pubmsg":
       self.say_public("%s: %s" % (nm_to_n(e.source()), text))
     else:
@@ -555,6 +558,12 @@ class WolfModBot(SingleServerIRCBot):
     for p in self.live_players:
       self.say_public(p.verbose_str())
     self.say_public("Unused roles: %s" % " ".join(r.name for r in self.unused_roles))
+
+  def votedCorrectTeam(self, p):
+    if (p.curr_role == Role.Roles.Werewolf):
+      return p.voted_for.curr_role != Role.Roles.Werewolf
+    else:
+      return p.voted_for.curr_role == Role.Roles.Werewolf
 
   def check_night_done(self):
     "Check if nighttime is over."

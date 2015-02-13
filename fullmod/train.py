@@ -13,15 +13,21 @@ class Train():
     self.modbot = WolfModBot('chname', 'bot_nickname', 'bot_nickpass', 'server', 'port', False)
     self.players = []
     self.numGames = 100
-    self.maxEvaluations = 100
+    self.maxEvaluations = 5
+    self._e = Event("privmsg", None, None, None)
+    self.verbose = False
 
   def e(self, p):
     if type(p) is int:
-      return Event("privmsg", self.players[p].name, None, None)
-    if type(p) is str:
-      return Event("privmsg", p, None, None)
+      #return Event("privmsg", self.players[p].name, None, None)
+      self._e._source = self.players[p].name
+    elif type(p) is str:
+      #return Event("privmsg", p, None, None)
+      self._e._source = p
     else:
-      return Event("privmsg", p.name, None, None)
+      #return Event("privmsg", p.name, None, None)
+      self._e._source = p.name
+    return self._e
 
   def test_1(self):
     self.players = []
@@ -79,15 +85,20 @@ class Train():
         if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:
           break
     bot = self.modbot.find_player("nbot")
-    if (bot.curr_role == Role.Roles.Werewolf):
-      correctVote = bot.voted_for.curr_role != Role.Roles.Werewolf
-    else:
-      correctVote = bot.voted_for.curr_role == Role.Roles.Werewolf
+    correctVote = self.modbot.votedCorrectTeam(bot)
     correctVoteWeight = 0.5
     winWeight = 0.5
     reward = 0.
     if correctVote: reward += correctVoteWeight
     if bot.win: reward += winWeight
+    if self.verbose:
+      print ("cv=%i win=%i reward=%s" % ( correctVote, bot.win, reward ))
+      print ("name", [p.nickname for p in self.modbot.live_players])
+      print ("v", [p.voted_for.nickname for p in self.modbot.live_players])
+      print ("or", [p.orig_role.name for p in self.modbot.live_players])
+      print ("cr", [p.curr_role.name for p in self.modbot.live_players])
+      print ("\n".join([p.nickname + " " + str(p.claim) for p in self.modbot.live_players]))
+      print
     self.modbot._reset_gamedata()
     return reward
 
@@ -99,11 +110,10 @@ class Train():
     return reward
 
   def f(self, net):
-    print "f", net
     return self.avgOverGames(net, self.numGames)
 
   def trainAi(self):
-    net = buildNetwork(NnWolfBot.numInputs, NnWolfBot.numOutputs, outclass = SigmoidLayer)
+    net = buildNetwork(NnWolfBot.numInputs, NnWolfBot.numInputs/2, NnWolfBot.numOutputs, outclass = SigmoidLayer)
     net = CheaplyCopiable(net)
     print (net.name, 'has', net.paramdim, 'trainable parameters.')
 
@@ -120,9 +130,9 @@ class Train():
     print self.f(net)
     print self.f(newnet)
 
+    self.verbose = True
     for i in range(10):
-      reward = self.oneAiGame(newnet)
-      print reward
+      self.oneAiGame(newnet)
 
 
 train = Train()
