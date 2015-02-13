@@ -8,10 +8,16 @@ class SimpleWolfPlayer():
     self.name = name
     self.modbot = modbot
     self.e = Event("privmsg", self.name, None, None)
+
   def getOtherPlayers(self):
     return [p for p in self.modbot.live_players if p.nickname != self.name]
+
   def getVoteCandidates(self, player):
     voteCandidates = self.getOtherPlayers()
+    # If someone claims WW, vote for him  TODO: Robber 50/50
+    wolfClaims = [p for p in voteCandidates if p.claim.role == Role.Roles.Werewolf]
+    if wolfClaims:
+      return wolfClaims
     # If WW, don't vote for your teammate
     if player.orig_role == Role.Roles.Werewolf:
       voteCandidates = [p for p in voteCandidates if p.orig_role != Role.Roles.Werewolf]
@@ -19,6 +25,7 @@ class SimpleWolfPlayer():
     if player.orig_role == Role.Roles.Seer and player.night_targets[0].orig_role == Role.Roles.Werewolf:
       voteCandidates = [player.night_targets[0]]
     return voteCandidates
+
   def getAction(self):
     player = self.modbot.find_player(self.name)
     if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:

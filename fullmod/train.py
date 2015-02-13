@@ -4,11 +4,16 @@ from simplewolfplayer import SimpleWolfPlayer
 from nnwolfbot import NnWolfBot
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain import SigmoidLayer
+from pybrain.structure.evolvables.cheaplycopiable import CheaplyCopiable
+from pybrain.optimization import ES
+from pybrain.optimization import HillClimber
 
 class Train():
   def __init__(self):
     self.modbot = WolfModBot('chname', 'bot_nickname', 'bot_nickpass', 'server', 'port', False)
     self.players = []
+    self.numGames = 100
+    self.maxEvaluations = 100
 
   def e(self, p):
     if type(p) is int:
@@ -83,13 +88,42 @@ class Train():
     reward = 0.
     if correctVote: reward += correctVoteWeight
     if bot.win: reward += winWeight
+    self.modbot._reset_gamedata()
     return reward
+
+  def avgOverGames(self, net, num):
+    reward = 0.
+    for _ in range(num):
+      reward += self.oneAiGame(net)
+    reward /= num
+    return reward
+
+  def f(self, net):
+    print "f", net
+    return self.avgOverGames(net, self.numGames)
 
   def trainAi(self):
     net = buildNetwork(NnWolfBot.numInputs, NnWolfBot.numOutputs, outclass = SigmoidLayer)
+    net = CheaplyCopiable(net)
+    print (net.name, 'has', net.paramdim, 'trainable parameters.')
+
+    learner = ES(self.f, net, mu = 5, lambada = 5,
+                 verbose = True, evaluatorIsNoisy = True,
+                 maxEvaluations = self.maxEvaluations)
+    #learner = HillClimber(
+    #              task, net,
+    #              evaluatorIsNoisy = True,
+    #              maxEvaluations = maxEvaluations)
+
+    newnet, f = learner.learn()
+
+    print self.f(net)
+    print self.f(newnet)
+
     for i in range(10):
-      reward = self.oneAiGame(net)
+      reward = self.oneAiGame(newnet)
       print reward
+
 
 train = Train()
 #train.test_1()
