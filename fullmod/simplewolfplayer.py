@@ -31,7 +31,7 @@ class SimpleWolfPlayer():
         else:
           self.modbot.claim(self.e, Claim(player.orig_role, player.night_targets, [t.orig_role.name for t in player.night_targets], self.getVoteCandidates(player)))
         if (self.modbot.turnnum > 0):
-          self.votes = self.getVoteCandidates(player)
+          self.votes = [p.nickname for p in self.getVoteCandidates(player)]
       else:
         self.modbot.cmd_vote([random.choice(self.getVoteCandidates(player)).nickname], self.e)
     else:

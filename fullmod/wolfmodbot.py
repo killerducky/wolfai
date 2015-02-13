@@ -116,7 +116,7 @@ class Player():
     self.voted_for      = None
     self.received_votes = 0
     self.win            = False
-    self.claim          = None
+    self.claim          = Claim()
     self.claim_done     = False
   def __str__(self):
     return "%s" % self.nickname
@@ -147,7 +147,7 @@ class Player():
     return s
 
 class Claim():
-  def __init__(self, role, targets, target_roles, votes):
+  def __init__(self, role=None, targets=[], target_roles=[], votes=[]):
     self.role = role
     self.targets = targets
     self.target_roles = target_roles
@@ -161,7 +161,7 @@ class Claim():
     if len(self.votes):
       s += " will vote for"
     for v in self.votes:
-      s += " %s" % v.nickname
+      s += " %s" % v
     return s
 
 class Role():

@@ -1,16 +1,14 @@
 from wolfmodbot import WolfModBot, Role
 from fakeirc import Event
 from simplewolfplayer import SimpleWolfPlayer
+from nnwolfbot import NnWolfBot
+from pybrain.tools.shortcuts import buildNetwork
+from pybrain import SigmoidLayer
 
 class Train():
   def __init__(self):
     self.modbot = WolfModBot('chname', 'bot_nickname', 'bot_nickpass', 'server', 'port', False)
     self.players = []
-    self.players.append(SimpleWolfPlayer("KillerDucky", self.modbot))
-    self.players.append(SimpleWolfPlayer("Alice", self.modbot))
-    self.players.append(SimpleWolfPlayer("Bob", self.modbot))
-    self.players.append(SimpleWolfPlayer("Charlie", self.modbot))
-    self.players.append(SimpleWolfPlayer("Doug", self.modbot))
 
   def e(self, p):
     if type(p) is int:
@@ -21,6 +19,12 @@ class Train():
       return Event("privmsg", p.name, None, None)
 
   def test_1(self):
+    self.players = []
+    self.players.append(SimpleWolfPlayer("KillerDucky", self.modbot))
+    self.players.append(SimpleWolfPlayer("Alice", self.modbot))
+    self.players.append(SimpleWolfPlayer("Bob", self.modbot))
+    self.players.append(SimpleWolfPlayer("Charlie", self.modbot))
+    self.players.append(SimpleWolfPlayer("Doug", self.modbot))
     self.modbot.default_roles = [
       Role.Roles.Werewolf,     # 0 KD
       Role.Roles.Seer,         # 1 Alice
@@ -45,6 +49,12 @@ class Train():
     self.modbot.cmd_status([], self.e(0))
 
   def simpleAiTest(self):
+    net = buildNetwork(NnWolfBot.numInputs, NnWolfBot.numOutputs, outclass = SigmoidLayer)
+    self.players.append(NnWolfBot(net, "nbot", self.modbot))
+    self.players.append(SimpleWolfPlayer("Andy", self.modbot))
+    self.players.append(SimpleWolfPlayer("Bobi", self.modbot))
+    self.players.append(SimpleWolfPlayer("Chad", self.modbot))
+    self.players.append(SimpleWolfPlayer("Doug", self.modbot))
     self.modbot.default_roles = [
       Role.Roles.Werewolf,
       Role.Roles.Werewolf,
@@ -56,7 +66,7 @@ class Train():
       Role.Roles.Villager
     ]
     self.modbot.cmd_start([], self.e(0))
-    #self.modbot.no_shuffle = True
+    self.modbot.no_shuffle = True
     for p in self.players[1:]:
       self.modbot.cmd_join([], self.e(p))
     while self.modbot.gamestate == self.modbot.GAMESTATE_RUNNING:
