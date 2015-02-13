@@ -46,11 +46,14 @@ class Train():
 
   def simpleAiTest(self):
     self.modbot.default_roles = [
-      Role.Roles.Werewolf,     # 0 KD
-      Role.Roles.Seer,         # 1 Alice
-      Role.Roles.Robber,       # 2 Bob
-      Role.Roles.Troublemaker, # 3 Charlie
-      Role.Roles.Insomniac     # 4 Doug
+      Role.Roles.Werewolf,
+      Role.Roles.Werewolf,
+      Role.Roles.Seer,
+      Role.Roles.Robber,
+      Role.Roles.Insomniac,
+      Role.Roles.Villager,
+      Role.Roles.Villager,
+      Role.Roles.Villager
     ]
     self.modbot.cmd_start([], self.e(0))
     #self.modbot.no_shuffle = True

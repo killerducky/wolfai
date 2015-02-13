@@ -116,6 +116,8 @@ class Player():
     self.voted_for      = None
     self.received_votes = 0
     self.win            = False
+    self.claim          = None
+    self.claim_done     = False
   def __str__(self):
     return "%s" % self.nickname
   def verbose_str(self):
@@ -142,6 +144,24 @@ class Player():
     if self.voted_for:
       s += " Voted for %s." % (self.voted_for.nickname)
     s += " Received %d votes." % (self.received_votes)
+    return s
+
+class Claim():
+  def __init__(self, role, targets, target_roles, votes):
+    self.role = role
+    self.targets = targets
+    self.target_roles = target_roles
+    self.votes = votes
+  def __str__(self):
+    s = "myrole=%s" % self.role
+    for t in self.targets:
+      s += " target=%s" % t
+    for r in self.target_roles:
+      s += " target_role=%s" % r
+    if len(self.votes):
+      s += " will vote for"
+    for v in self.votes:
+      s += " %s" % v.nickname
     return s
 
 class Role():
@@ -349,7 +369,8 @@ class WolfModBot(SingleServerIRCBot):
 
   def _reset_gamedata(self):
     self.gamestate = self.GAMESTATE_NONE
-    self.time = None
+    self.time = "night"
+    self.turnnum = 0                    # Formal phase number
     self.game_starter = None
     self.game_starter_last_seen = 0
     self.live_players = []
@@ -628,6 +649,18 @@ class WolfModBot(SingleServerIRCBot):
       else:
         who[i] = None
 
+  def claim(self, e, claim):
+    "Formal claim registration"
+    player = self.find_player(nm_to_n(e.source()))
+    player.claim = claim
+    player.claim_done = True
+    self.say_public("%s claims: %s" % (player.nickname, claim))
+    if not False in [p.claim_done for p in self.live_players]:
+      for p in self.live_players: p.claim_done = False
+      self.turnnum += 1
+      print
+      print "turnnum", self.turnnum
+
   def see(self, e, who):
     "Allow a Seer to 'see' somebody."
 
@@ -687,7 +720,7 @@ class WolfModBot(SingleServerIRCBot):
     for p in self.live_players:
       if p.received_votes > most_votes:
         most_votes = p.received_votes
-        most_voted_players.append(p)
+        most_voted_players = [p]
       elif p.received_votes == most_votes:
         most_voted_players.append(p)
     if most_votes == 1:
