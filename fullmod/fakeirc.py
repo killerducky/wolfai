@@ -14,9 +14,11 @@ class Channel():
   def is_moderated(self): return False
 
 class OutputManager():
-  def __init__(self, *args): pass
+  def __init__(self, *args):
+    self.verbose = False
   def start(self): pass
-  def send(self, s, ch="default"): print "OutputManger: ch=%s s=%s" % (ch, s)
+  def send(self, s, ch="default"):
+    if self.verbose: print "OutputManger: ch=%s s=%s" % (ch, s)
 
 class Event:
   def __init__(self, eventtype, source, target, arguments=None):

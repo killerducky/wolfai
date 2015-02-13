@@ -21,7 +21,6 @@ class SimpleWolfPlayer():
     return voteCandidates
   def getAction(self):
     player = self.modbot.find_player(self.name)
-    print "getAction for name=%s role=%s" % (self.name, player.orig_role)
     if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:
       raise
     if self.modbot.time == "day":

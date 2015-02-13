@@ -48,8 +48,7 @@ class Train():
     self.modbot.cmd_vote(["Alice"],       self.e(0))
     self.modbot.cmd_status([], self.e(0))
 
-  def simpleAiTest(self):
-    net = buildNetwork(NnWolfBot.numInputs, NnWolfBot.numOutputs, outclass = SigmoidLayer)
+  def oneAiGame(self, net):
     self.players.append(NnWolfBot(net, "nbot", self.modbot))
     self.players.append(SimpleWolfPlayer("Andy", self.modbot))
     self.players.append(SimpleWolfPlayer("Bobi", self.modbot))
@@ -66,7 +65,7 @@ class Train():
       Role.Roles.Villager
     ]
     self.modbot.cmd_start([], self.e(0))
-    self.modbot.no_shuffle = True
+    #self.modbot.no_shuffle = True
     for p in self.players[1:]:
       self.modbot.cmd_join([], self.e(p))
     while self.modbot.gamestate == self.modbot.GAMESTATE_RUNNING:
@@ -74,8 +73,24 @@ class Train():
         p.getAction()
         if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:
           break
+    bot = self.modbot.find_player("nbot")
+    if (bot.curr_role == Role.Roles.Werewolf):
+      correctVote = bot.voted_for.curr_role != Role.Roles.Werewolf
+    else:
+      correctVote = bot.voted_for.curr_role == Role.Roles.Werewolf
+    correctVoteWeight = 0.5
+    winWeight = 0.5
+    reward = 0.
+    if correctVote: reward += correctVoteWeight
+    if bot.win: reward += winWeight
+    return reward
 
+  def trainAi(self):
+    net = buildNetwork(NnWolfBot.numInputs, NnWolfBot.numOutputs, outclass = SigmoidLayer)
+    for i in range(10):
+      reward = self.oneAiGame(net)
+      print reward
 
 train = Train()
 #train.test_1()
-train.simpleAiTest()
+train.trainAi()

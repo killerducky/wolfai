@@ -55,7 +55,7 @@ class NnWolfBot(Agent):
   according to the output of a module that takes as input the current state of the board. """
 
   numInputs = 174
-  numOutputs = 33
+  numOutputs = 41
 
   # temperature = 1 for Gibbs-sampling
   # temperature = 0 for greedy (always pick largest output in vote vector)
@@ -80,9 +80,7 @@ class NnWolfBot(Agent):
     self.normedPlayers = list(self.modbot.live_players)
     #self.myidx = (i for i,p in enumerate(self.normedPlayers) if p.nickname == self.name).next()
     self.myidx = None
-    print ("me=%s" % self.name)
     for i,p in enumerate(self.normedPlayers):
-      print ("nick=%s" % p.nickname)
       if p.nickname == self.name:
         self.myidx = i
         break
@@ -99,25 +97,70 @@ class NnWolfBot(Agent):
     return pos
 
   def decode(self, encodedVal, pos, values):
+    bits = encodedVal[pos:pos+len(values)-1]
     result = drawGibbs(encodedVal[pos:pos+len(values)-1], self.temperature) + 1
     pos += len(values)
-    return (pos, values[result])
+    return (pos, bits, values[result])
+
+  def decodeClaim(self, output, pos):
+    claim = Claim(None, [None]*2, [None]*2, [])
+    (pos, _, claim.role)            = self.decode(output, pos, self.supportedRoles + [None])
+    (pos, _, night_action_type)     = self.decode(output, pos, [0,1,None])
+    (pos, t0bits, claim.targets[0]) = self.decode(output, pos, self.normedNames + [None])
+    (pos, t1bits, claim.targets[1]) = self.decode(output, pos, self.normedNames + [None])
+    (pos, _, claim.target_roles[0]) = self.decode(output, pos, self.supportedRoles + [None])
+    (pos, _, claim.target_roles[1]) = self.decode(output, pos, self.supportedRoles + [None])
+    if False: pass
+    elif claim.role == Role.Roles.Werewolf:
+      if (night_action_type == 1):
+        # Lone wolf claim
+        (_, _, claim.targets[0]) = self.decode(t0bits, 0, ["left", "middle", "right", None])
+        claim.targets = claim.targets[:1]
+      else:
+        # TODO for now only handling 2 wolf case
+        claim.targets = claim.targets[:1]
+        claim.target_roles = claim.target_roles[:1]
+    elif claim.role == Role.Roles.Seer:
+      if (night_action_type == 1):
+        # Seer peek middle case, reinterpret the bits
+        (_, _, claim.targets[0]) = self.decode(t0bits, 0, ["left", "middle", "right", None])
+        (_, _, claim.targets[1]) = self.decode(t1bits, 0, ["left", "middle", "right", None])
+      else:
+        claim.targets = claim.targets[:1]
+        claim.target_roles = claim.targets[:1]
+    elif claim.role == Role.Roles.Robber:
+      if (night_action_type == 1):
+        # Robber did not rob case
+        claim.targets = []
+        claim.target_roles = []
+      else:
+        claim.targets = claim.targets[:1]
+        claim.target_roles = claim.targets[:1]
+    elif claim.role == Role.Roles.Troublemaker:
+      claim.target_roles = []
+    elif claim.role == Role.Roles.Insomniac:
+      claim.targets = []
+      claim.target_roles = claim.target_roles[:1]
+    elif claim.role == Role.Roles.Villager:
+      claim.targets = []
+      claim.target_roles = []
+    # Remove None elements
+    claim.targets = [t for t in claim.targets if t]
+    claim.target_roles = [t for t in claim.target_roles if t]
+    return (pos, claim)
+
 
   def getAction(self):
     """ get suggested action, return them if they are legal, otherwise choose randomly. """
     if not self.normedPlayers:
       self.gameStart()
     player = self.modbot.find_player(self.name)
-    print ("getAction for name=%s role=%s" % (self.name, player.orig_role))
     if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:
       raise
     if self.modbot.time != "day":
-      print ("day")
       self.fb.getAction() # Don't use NN for this part
       return
 
-
-    # Module player is always assumed player #0
     state = [0] * self.numInputs
     pos = 0
     pos = self.encode(state, pos, player.orig_role, self.supportedRoles)
@@ -134,33 +177,23 @@ class NnWolfBot(Agent):
           voteVector[i] = 1
       state[pos:pos+len(self.normedNames)] = voteVector
       pos += len(self.normedNames)
-    print ("input pos = ", pos)
+    assert pos == self.numInputs
+
     self.module.reset()
     output = self.module.activate(state)
-    claim = Claim(None, [None]*2, [None]*2, [])
+
     pos = 0
-    # TODO handle cases were we don't claim things
-    (pos, claim.role)            = self.decode(output, pos, self.supportedRoles)
-    (pos, claim.targets[0])      = self.decode(output, pos, self.normedNames)
-    (pos, claim.targets[1])      = self.decode(output, pos, self.normedNames)
-    (pos, claim.target_roles[0]) = self.decode(output, pos, self.supportedRoles)
-    (pos, claim.target_roles[1]) = self.decode(output, pos, self.supportedRoles)
+    (pos, claim) = self.decodeClaim(output, pos)
     votes = output[pos:pos+len(self.normedNames)-1]
     votes[0] = 0 # Do not vote for self
     pos += len(self.normedNames)
     for i,v in enumerate(votes):
       if v > 0.5: claim.votes.append(self.normedNames[i])
-    print ("output pos = ", pos)
+    assert pos == self.numOutputs
+
     if (self.modbot.turnnum < 2):
       self.modbot.claim(self.fb.e, claim)
     else:
       vote = drawGibbs(votes)
       self.modbot.cmd_vote([self.normedNames[vote]], self.fb.e)
-      print ("vote", vote, self.normedNames[vote])
-    #print ()
-    #print ("input", state)
-    #print (self.modbot.stateStr())
-    #print ("output", output, result)
-    #print ()
-
-
+      #print ("vote", votes, vote, self.normedNames[vote])

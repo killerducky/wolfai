@@ -172,7 +172,7 @@ class Role():
     return str(self.role.name)
 
 class WolfModBot(SingleServerIRCBot):
-  GAMESTATE_NONE, GAMESTATE_STARTING, GAMESTATE_RUNNING = range(3)
+  GAMESTATE_NONE, GAMESTATE_STARTING, GAMESTATE_RUNNING, GAMESTATE_DONE = range(4)
   Center_Locations = Enum("Center", "left middle right")
 
   def __init__(self, channel, nickname, nickpass, server, port=defaultPort, debug=False):
@@ -422,7 +422,7 @@ class WolfModBot(SingleServerIRCBot):
           "that person must end it." % self.game_starter)
       return
 
-    if self.gamestate == self.GAMESTATE_NONE:
+    if self.gamestate == self.GAMESTATE_NONE or self.gamestate == self.GAMESTATE_DONE:
       self._reset_gamedata()
       self.gamestate = self.GAMESTATE_STARTING
       self.game_starter = game_starter
@@ -498,6 +498,7 @@ class WolfModBot(SingleServerIRCBot):
             p.night_done = True
 
         self.gamestate = self.GAMESTATE_RUNNING
+        self.check_night_done()
 
         self.fix_modes()
 
@@ -547,8 +548,7 @@ class WolfModBot(SingleServerIRCBot):
                 p.win = True
         self.reveal_all_identities()
 
-      self._reset_gamedata()
-      self.gamestate = self.GAMESTATE_NONE
+      self.gamestate = self.GAMESTATE_DONE
       self.fix_modes()
 
   def reveal_all_identities(self):
@@ -658,8 +658,6 @@ class WolfModBot(SingleServerIRCBot):
     if not False in [p.claim_done for p in self.live_players]:
       for p in self.live_players: p.claim_done = False
       self.turnnum += 1
-      print
-      print "turnnum", self.turnnum
 
   def see(self, e, who):
     "Allow a Seer to 'see' somebody."
