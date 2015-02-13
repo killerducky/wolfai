@@ -151,7 +151,7 @@ class Role():
   def __str__(self):
     return str(self.role.name)
 
-class WolfBot(SingleServerIRCBot):
+class WolfModBot(SingleServerIRCBot):
   GAMESTATE_NONE, GAMESTATE_STARTING, GAMESTATE_RUNNING = range(3)
   Center_Locations = Enum("Center", "left middle right")
 
@@ -1022,7 +1022,7 @@ class WolfBot(SingleServerIRCBot):
     self.reply(e, "Invalid command")
 
 def usage(exitcode=1):
-  print "Usage: wolfbot.py [-d] [<config-file>]"
+  print "Usage: wolfmodbot.py [-d] [<config-file>]"
   sys.exit(exitcode)
 
 
@@ -1045,12 +1045,12 @@ def main_irc():
   if len(args) > 1:
     configfile = args[1]
   else:
-    configfile = 'wolfbot.conf'
+    configfile = 'wolfmodbot.conf'
 
   import ConfigParser
   c = ConfigParser.ConfigParser()
   c.read(configfile)
-  cfgsect = 'wolfbot'
+  cfgsect = 'wolfmodbot'
   host = c.get(cfgsect, 'host')
   channel = c.get(cfgsect, 'channel')
   nickname = c.get(cfgsect, 'nickname')
@@ -1068,10 +1068,10 @@ def main_irc():
     port = defaultPort
 
   print "Server = ", server
-  bot = WolfBot(channel, nickname, nickpass, server, port, debug)
+  bot = WolfModBot(channel, nickname, nickpass, server, port, debug)
 
 def main_fakeirc():
-  bot = WolfBot('chname', 'bot_nickname', 'bot_nickpass', 'server', 'port', False)
+  bot = WolfModBot('chname', 'bot_nickname', 'bot_nickpass', 'server', 'port', False)
   bot.cmd_test([], Event("privmsg", "KillerDucky", None, None))
 
 def main():
