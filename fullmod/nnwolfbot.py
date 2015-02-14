@@ -54,7 +54,7 @@ class NnWolfBot(Agent):
   """ A Capture-game player that plays according to the rules, but choosing its moves
   according to the output of a module that takes as input the current state of the board. """
 
-  numInputs = 174
+  numInputs = 196
   numOutputs = 41
 
   # temperature = 1 for Gibbs-sampling
@@ -149,22 +149,18 @@ class NnWolfBot(Agent):
     claim.target_roles = [t for t in claim.target_roles if t]
     return (pos, claim)
 
-
-  def getAction(self):
-    """ get suggested action, return them if they are legal, otherwise choose randomly. """
-    if not self.normedPlayers:
-      self.gameStart()
-    player = self.modbot.find_player(self.name)
-    if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:
-      raise
-    if self.modbot.time != "day":
-      self.fb.getAction() # Don't use NN for this part
-      return
-
+  def encodeState(self, turnnum, normedPlayers):
     state = [0] * self.numInputs
     pos = 0
-    pos = self.encode(state, pos, player.orig_role, self.supportedRoles)
-    pos = self.encode(state, pos, self.modbot.turnnum, range(0,2+1))
+    # Inform bot what our role and night info is
+    pos = self.encode(state, pos, normedPlayers[0].orig_role, self.supportedRoles)
+    pos = self.encode(state, pos, normedPlayers[0].night_targets[0] if len(normedPlayers[0].night_targets)>=1 else None, self.normedNames)
+    pos = self.encode(state, pos, normedPlayers[0].night_targets[1] if len(normedPlayers[0].night_targets)>=2 else None, self.normedNames)
+    pos = self.encode(state, pos, normedPlayers[0].target_roles[0] if len(normedPlayers[0].target_roles)>=1 else None, self.supportedRoles)
+    pos = self.encode(state, pos, normedPlayers[0].target_roles[1] if len(normedPlayers[0].target_roles)>=2 else None, self.supportedRoles)
+    # What turn is it
+    pos = self.encode(state, pos, turnnum, range(0,2+1))
+    # What did everyone claim last turn, including myself
     for p in self.normedPlayers:
       pos = self.encode(state, pos, p.claim.role,            self.supportedRoles)
       pos = self.encode(state, pos, p.claim.targets[0] if len(p.claim.targets)>=1 else None,      self.normedNames)
@@ -177,11 +173,10 @@ class NnWolfBot(Agent):
           voteVector[i] = 1
       state[pos:pos+len(self.normedNames)] = voteVector
       pos += len(self.normedNames)
-    assert pos == self.numInputs
+    assert pos == self.numInputs, (pos, self.numInputs)
+    return state
 
-    self.module.reset()
-    output = self.module.activate(state)
-
+  def decodeOutput(self, output):
     pos = 0
     (pos, claim) = self.decodeClaim(output, pos)
     votes = output[pos:pos+len(self.normedNames)-1]
@@ -190,6 +185,27 @@ class NnWolfBot(Agent):
     for i,v in enumerate(votes):
       if v > 0.5: claim.votes.append(self.normedNames[i])
     assert pos == self.numOutputs
+    return (claim, votes)
+
+  def encodeOutput(self, claim, votes):
+    output [Null]
+    return output
+
+  def getAction(self):
+    """ get suggested action, return them if they are legal, otherwise choose randomly. """
+    if not self.normedPlayers:
+      self.gameStart()
+    player = self.modbot.find_player(self.name)
+    if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:
+      raise
+    if self.modbot.time != "day":
+      self.fb.getAction() # Don't use NN for this part
+      return
+
+    state = self.encodeState(self.modbot.turnnum, self.normedPlayers)
+    self.module.reset()
+    output = self.module.activate(state)
+    (claim, votes) = self.decodeState(state)
 
     if (self.modbot.turnnum < 2):
       self.modbot.claim(self.fb.e, claim)

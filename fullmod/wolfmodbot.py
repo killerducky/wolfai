@@ -112,6 +112,7 @@ class Player():
     self.orig_role      = None
     self.curr_role      = None
     self.night_targets  = []
+    self.target_roles   = []      # TODO fill this field in real games
     self.night_done     = False
     self.voted_for      = None
     self.received_votes = 0

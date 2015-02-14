@@ -60,6 +60,7 @@ class Train():
     self.modbot.cmd_status([], self.e(0))
 
   def oneAiGame(self, net):
+    self.modbot._reset_gamedata()
     self.players.append(NnWolfBot(net, "nbot", self.modbot))
     self.players.append(SimpleWolfPlayer("Andy", self.modbot))
     self.players.append(SimpleWolfPlayer("Bobi", self.modbot))
@@ -84,6 +85,8 @@ class Train():
         p.getAction()
         if self.modbot.gamestate != self.modbot.GAMESTATE_RUNNING:
           break
+
+  def calcReward(self):
     bot = self.modbot.find_player("nbot")
     correctVote = self.modbot.votedCorrectTeam(bot)
     correctVoteWeight = 0.5
@@ -99,13 +102,17 @@ class Train():
       print ("cr", [p.curr_role.name for p in self.modbot.live_players])
       print ("\n".join([p.nickname + " " + str(p.claim) for p in self.modbot.live_players]))
       print
-    self.modbot._reset_gamedata()
+    return reward
+
+  def oneAiGameAndReward(self, net):
+    self.oneAiGame(net)
+    reward = self.calcReward()
     return reward
 
   def avgOverGames(self, net, num):
     reward = 0.
     for _ in range(num):
-      reward += self.oneAiGame(net)
+      reward += self.oneAiGameAndReward(net)
     reward /= num
     return reward
 
@@ -132,7 +139,7 @@ class Train():
 
     self.verbose = True
     for i in range(10):
-      self.oneAiGame(newnet)
+      self.oneAiGameAndReward(newnet)
 
 
 train = Train()
